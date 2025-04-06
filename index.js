@@ -8,9 +8,8 @@ const connectDB = require('./db')
 
 
 // === Configuration ===
-const BOT_TOKEN = '7853908429:AAHs7CJTaDyGCT1ofYmyGMHxXWUZh0Aj378';
-const MONGO_URI = 'mongodb+srv://andifab23:tNgwwixDs0Bo5aUj@cluster0.xka9c.mongodb.net/travelBot?retryWrites=true&w=majority&appName=Cluster0';
-const ADMIN_ID =[ 445168632,408048964];
+const BOT_TOKEN = process.env.BOT_TOKEN 
+
 const GROUP_CHAT_ID = -1002090187887;
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
