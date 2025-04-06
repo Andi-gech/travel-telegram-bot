@@ -640,7 +640,7 @@ function isValidDate(dateStr) {
   return !isNaN(date.getTime());
 }
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'TravelBot is running' });
+  res.status(200).json({ status: 'ok', message: process.env.BOT_TOKEN });
 });
 
 // You can add more routes as needed
