@@ -14,7 +14,7 @@ const connectDB = require('./db')
 const BOT_TOKEN = process.env.BOT_TOKEN
 console.error('BOT_TOKEN:', BOT_TOKEN);
 
-const ADMIN_ID = [445168632]; // Replace with actual admin IDs
+const ADMIN_ID = [445168632,408048964]; // Replace with actual admin IDs
 
 const GROUP_CHAT_ID = -1002090187887;
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
