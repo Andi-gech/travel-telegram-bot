@@ -1,3 +1,6 @@
+const express = require('express');
+const app = express();
+
 const ethiopianDate = require('ethiopian-date');
 const TelegramBot = require('node-telegram-bot-api');
 const {ObjectId } = require('mongodb');
@@ -633,5 +636,19 @@ function isValidDate(dateStr) {
   const date = new Date(dateStr);
   return !isNaN(date.getTime());
 }
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'TravelBot is running' });
+});
 
-console.log('🚀 TravelBot is running...');
+// You can add more routes as needed
+
+// Export the Express app
+module.exports = app;
+
+// If running locally, start the server
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Express server listening on port ${PORT}`);
+  });
+}
