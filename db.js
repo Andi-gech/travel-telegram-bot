@@ -1,7 +1,7 @@
 // db.js
 const mongoose = require('mongoose');
 
-const MONGO_URI = 'mongodb+srv://andifab23:tNgwwixDs0Bo5aUj@cluster0.xka9c.mongodb.net/travelBot?retryWrites=true&w=majority&appName=Cluster0';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/mydatabase';
 
 const connectDB = async () => {
   try {
