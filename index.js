@@ -12,6 +12,7 @@ const connectDB = require('./db')
 
 // === Configuration ===
 const BOT_TOKEN = process.env.BOT_TOKEN
+console.log('BOT_TOKEN:', BOT_TOKEN);
 
 const ADMIN_ID = [445168632]; // Replace with actual admin IDs
 

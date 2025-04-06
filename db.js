@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/mydatabase';
-
+console.error('Mongo URI:', MONGO_URI); // Log the Mongo URI for debugging
 const connectDB = async () => {
   try {
     await mongoose.connect(MONGO_URI);
