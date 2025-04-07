@@ -11,7 +11,7 @@ const connectDB = require('./db')
 
 
 // === Configuration ===
-const BOT_TOKEN = process.env.BOT_TOKEN
+const BOT_TOKEN = process.env.BOT_TOKEN||'7853908429:AAFiACcv4wllHDtIHEFVrvQPh0NLRTZK8KE'
 console.error('BOT_TOKEN:', BOT_TOKEN);
 
 const ADMIN_ID = [445168632,408048964]; // Replace with actual admin IDs
@@ -674,9 +674,16 @@ function isValidDate(dateStr) {
   const date = new Date(dateStr);
   return !isNaN(date.getTime());
 }
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: process.env.BOT_TOKEN });
-});
+app.get('/register', (req, res) => {
+  const { name, phoneNumber, pickupLocation,endDate } = req.query;
+  if (!name || !phoneNumber || !pickupLocation, !endDate) {
+    return res.status(400).send('Missing required fields.');
+  }
+
+
+
+}
+)
 
 // You can add more routes as needed
 
