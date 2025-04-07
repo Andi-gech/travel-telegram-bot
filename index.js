@@ -19,7 +19,6 @@ const ADMIN_ID = [445168632,408048964]; // Replace with actual admin IDs
 const GROUP_CHAT_ID = -1002090187887;
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
-// === Database Connection ===
 
 
 connectDB();
@@ -46,7 +45,7 @@ const adminMenu = {
   reply_markup: {
     keyboard: [
       ['📅 አዲስ ጉዞ ፍጠር', '👥 ተሳታፊዎችን ይመልከቱ'],
-      ['📊 ስታቲስቲክስ', '🏠 Main Menu','Verify Users']
+      ['📊 ስታቲስቲክስ', 'Delete Current Trip','Verify Users']
     ],
     resize_keyboard: true
   }
@@ -98,7 +97,7 @@ bot.onText(/🏕 Current Trips/, (async (msg) => {
 bot.onText(/Verify Users/, (async (msg) => {
   const travel = await Travel.findOne({ isActive: true });
   if (!travel) return bot.sendMessage(msg.chat.id, 'ℹ️ No active trips available.');
-  const participants = await User.find({ travelId: travel._id, paymentStatus:"denied"  }).populate('travelId');
+  const participants = await User.find({ travelId: travel._id, paymentStatus:"pending"  }).populate('travelId');
   if (participants.length === 0) return bot.sendMessage(msg.chat.id, 'ℹ️ No pending registrations to verify.');
 bot.sendMessage(msg.chat.id, `👥 *የ ${travel.name} ተሳታፊዎች*\n\n`);
   participants.forEach((p, index) => {
@@ -146,6 +145,21 @@ bot.onText(/ℹ️ Help/, (msg) => {
     reply_markup: mainMenu.reply_markup 
   });
 });
+bot.onText(/Delete Current Trip/, (msg) => {
+  if (!ADMIN_ID.includes(msg.from.id)) return;
+  bot.sendMessage(msg.chat.id, 'Are you sure you want to delete the current trip?', {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '✅ Yes', callback_data: 'delete_trip' },
+          { text: '❌ No', callback_data: 'cancel_delete' }
+        ]
+      ]
+    }
+  });
+}
+);
+
 
 // View Participants Handler (Admin)
 bot.onText(/👥 ተሳታፊዎችን ይመልከቱ/, (async (msg) => {
@@ -159,10 +173,11 @@ console.log('Travel:', travel._id.toString());
     
     console.log('Participants:', participants)
     let message = `👥  የ ${travel.name} ተሳታፊዎች\n\n`;
+    message += `NO   NAME     PICKUP    PHONE \n`;
     message += `**>`;
  
     participants.forEach((p, index) => {
-      message += `>${index + 1} ${p.name}  ${p.paymentStatus.toUpperCase()} \n`;
+      message += `>${index + 1}       ${p.name}    ${p.pickupLocation}    ${p.phoneNumber} \n\n`;
     });
 
     bot.sendMessage(msg.chat.id, message, { parse_mode: 'MarkdownV2' });
@@ -628,6 +643,26 @@ console.log('Approve data:', data);
     bot.answerCallbackQuery(query.id, { text: '❌ Registration denied!' });
     bot.sendMessage(message.chat.id, `❌ Registration denied for ${registrationId}.`);
     bot.sendMessage(userId, `❌ Registration denied for ${registrationId}.`);
+  }
+  if (data === 'delete_trip') {
+    const userId = query.from.id;
+    if (!ADMIN_ID.includes(userId)) return;
+
+    try {
+      await Travel.updateMany({}, { $set: { isActive: false } });
+      bot.sendMessage(message.chat.id, '✅ Current trip has been deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting trip:', error);
+      bot.sendMessage(message.chat.id, '❌ Failed to delete the trip. Please try again later.');
+    }
+  }
+  if (data === 'cancel_delete') {
+    const userId = query.from.id;
+    if (!ADMIN_ID.includes(userId)) return;
+
+    bot.sendMessage(message.chat.id, '❌ Trip deletion has been canceled.', {
+      reply_markup: adminMenu.reply_markup
+    });
   }
 });
 
