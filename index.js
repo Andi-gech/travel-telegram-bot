@@ -17,8 +17,19 @@ console.error('BOT_TOKEN:', BOT_TOKEN);
 const ADMIN_ID = [445168632,408048964]; // Replace with actual admin IDs
 
 const GROUP_CHAT_ID = -1002090187887;
-const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+const bot = new TelegramBot(BOT_TOKEN, {
+  polling: {
+    interval: 300,    // Check every 5 minutes
+    autoStart: true,
+    params: {
+      timeout: 10    // Wait 10 seconds for updates
+    }
+  }
+});
 
+bot.on('polling_error', (error) => {
+  console.error('Polling error:', error);
+});
 
 
 connectDB();
@@ -674,26 +685,32 @@ function isValidDate(dateStr) {
   const date = new Date(dateStr);
   return !isNaN(date.getTime());
 }
-app.get('/register', (req, res) => {
-  const { name, phoneNumber, pickupLocation,endDate } = req.query;
-  if (!name || !phoneNumber || !pickupLocation, !endDate) {
-    return res.status(400).send('Missing required fields.');
-  }
-
-
-
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
 }
 )
 
 // You can add more routes as needed
-
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  bot.stopPolling();
+  bot.startPolling(); // Restart polling mechanism
+});
 // Export the Express app
 module.exports = app;
-
-// If running locally, start the server
-if (require.main === module) {
+const startServer = () => {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
-    console.log(`Express server listening on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
+    
+    // Self-pinging mechanism
+    setInterval(() => {
+      fetch(`https://travel-telegram-bot.onrender.com`)
+        .catch(error => console.error('Keep-alive ping failed:', error));
+    }, 300000); // 5 minutes
   });
+};
+
+if (require.main === module) {
+  startServer();
 }
