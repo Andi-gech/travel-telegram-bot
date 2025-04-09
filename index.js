@@ -992,7 +992,7 @@ process.on('unhandledRejection', (reason, promise) => {
 module.exports = app;
 const startServer = () => {
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT,'192.168.1.9',() => {
+  app.listen(PORT,() => {
     console.log(`Server running on http://192.168.1.9:3000`);
     
     // Self-pinging mechanism
