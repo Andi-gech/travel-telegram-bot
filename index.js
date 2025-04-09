@@ -1,17 +1,22 @@
 const express = require('express');
 const app = express();
-
+const upload = require('./multerConfig');
 const ethiopianDate = require('ethiopian-date');
 const TelegramBot = require('node-telegram-bot-api');
 const {ObjectId } = require('mongodb');
 const { format } = require('date-fns');
 const Travel=require('./Model/Travel')
 const User=require('./Model/Users');
-const connectDB = require('./db')
+const connectDB = require('./db');
+const cloudinary = require('./cloudinaryConfig');
+const cors = require('cors');
 
+app.use(cors());
+app.use(express.json());
+  
 
 // === Configuration ===
-const BOT_TOKEN = process.env.BOT_TOKEN||'7853908429:AAFiACcv4wllHDtIHEFVrvQPh0NLRTZK8KE'
+const BOT_TOKEN = process.env.BOT_TOKEN
 console.error('BOT_TOKEN:', BOT_TOKEN);
 
 const ADMIN_ID = [445168632,408048964]; // Replace with actual admin IDs
@@ -198,7 +203,7 @@ console.log('Travel:', travel._id.toString());
   }
 }));
 
-// Stats Handler (Admin)
+
 bot.onText(/📊 ስታቲስቲክስ/, (async (msg) => {
   if (!ADMIN_ID.includes(msg.from.id)) return;
 
@@ -689,8 +694,295 @@ app.get('/health', (req, res) => {
   res.status(200).send('OK');
 }
 )
+const uploads = [];
+app.get('/current',async (req, res) => {
+  try {
+    const travel = await Travel.findOne({ isActive: true });
+    if (!travel) return res.status(400).json({ error: 'No active trips available' });
+    const users = await User.find({ travelId: travel._id }).populate('travelId');
+    if (!users || users.length === 0) return res.status(404).json({ error: 'No pending registrations found' });
+    res.status(200).json(users);
+  } catch (error) {
+    console.error('Error fetching verified users:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+})    
 
-// You can add more routes as needed
+app.post('/register', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    
+   
+    const {name,phone:phoneNumber,telegramId,pickup:pickupLocation}=req.body;
+    if (!name )return res.status(400).json({ error: 'Name is required' });
+    if (!phoneNumber) return res.status(400).json({ error: 'Phone number is required' });
+    if (!telegramId) return res.status(400).json({ error: 'Telegram ID is required' });
+    if (!pickupLocation) return res.status(400).json({ error: 'Pickup location is required' });
+    if (!req.file) return res.status(400).json({ error: 'Screenshot is required' });
+    const travel = await Travel.findOne({ isActive: true });
+    if (!travel) return res.status(400).json({ error: 'No active trips available' });
+
+
+    // File URL returned by Cloudinary after upload
+    const fileUrl = req.file.path;
+    const publicId = req.file.filename; // Cloudinary stores the filename as public_id
+    console.log(fileUrl);
+   
+    const confirmationMessage = `<b>የጉዞ ምዝገባዎን ይመልከቱ።</b>\n\n` +
+  `👤 <b>ስም:</b> ${name}\n` +
+  `📞 <b>የስልክ ቁጥር:</b> ${phoneNumber}\n` +
+  `📍 <b>Pickup Location:</b> ${pickupLocation}\n\n` +
+  `💵 <b>ዋጋ:</b> ${travel.Price} ብር\n\n` +
+  `💳 <b>አካውንት ቁጥር:</b> ${travel.AccountNo}\n` +
+  `💳 <b>አካውንት ስም:</b> ${travel.AccountName}\n\n`;
+
+    console.log("telegram id",telegramId);
+    const sentMessage = await bot.sendPhoto(telegramId.toString(), fileUrl,{
+      caption: confirmationMessage,
+      parse_mode: "HTML",
+      reply_markup: { remove_keyboard: true }
+    });
+    console.log("console sent message")
+    const fileId = sentMessage.photo.pop().file_id;
+    console.log(sentMessage.photo.pop())
+    const user = {
+      telegramId: telegramId.toString(),
+      name,
+      travelId: travel._id.toString(),
+      paymentStatus: 'pending',
+      phoneNumber,
+      pickupLocation,
+      screenshot: fileId,
+      createdAt: new Date()
+    };
+    const result = await User.insertOne(user);
+    const keyboard = {
+      inline_keyboard: [[
+        { text: '✅ Approve', callback_data: `approve_${result._id}` },
+        { text: '❌ Deny', callback_data: `deny_${result._id}` }
+      ]]
+    };
+
+    ADMIN_ID.forEach((adminId) => {
+      bot.sendPhoto(adminId, fileId, {
+        caption: `📮 *አዲስ ምዝገባ*\n\n👤 *ስም:* ${user.name}\n🆔 *User ID:* ${result._id}\n📅 *ቀን:* ${formatGregorianDate(new Date())}`,
+        parse_mode: 'Markdown',
+        reply_markup: keyboard
+      });
+    });
+    bot.sendMessage(telegramId, '🕒 *ምዝገባዎ እየተገመገመ ነው። ከተፈቀደ በኋላ እናሳውቅዎታለን*።',  {
+      parse_mode: 'Markdown',
+      reply_markup: { remove_keyboard: true }
+    });
+
+
+   
+
+    // Remove the file from Cloudinary after posting to Telegram
+    await cloudinary.uploader.destroy(publicId, (error, result) => {
+      if (error) {
+        console.log('Error removing file from Cloudinary:', error);
+      } else {
+        console.log('File removed from Cloudinary:', result);
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      fileId,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: 'Upload failed' });
+  }
+});
+app.get('/verfyusers', async (req, res) => {
+  try {
+    // Step 1: Get the active travel
+    const travel = await Travel.findOne({ isActive: true });
+    if (!travel) {
+      return res.status(400).json({ error: 'No active trips available' });
+    }
+
+    // Step 2: Find users with pending payment
+    const users = await User.find({ travelId: travel._id, paymentStatus: 'pending' });
+    if (!users || users.length === 0) {
+      return res.status(404).json({ error: 'No pending registrations found' });
+    }
+
+    // Step 3: Convert screenshot file IDs to URLs
+    const usersWithScreenshots = await Promise.all(
+      users.map(async (user) => {
+        try {
+          const screenshotUrl = await bot.getFileLink(user.screenshot);
+          const plainUser = user.toObject(); // Convert Mongoose doc to plain object
+          return {
+            ...plainUser,
+            screenshot: screenshotUrl,
+          };
+        } catch (error) {
+          console.error(`Error processing screenshot for user ${user._id}:`, error);
+          const plainUser = user.toObject();
+          return {
+            ...plainUser,
+            screenshot: null,
+          };
+        }
+      })
+    );
+
+    // Step 4: Respond with processed users
+    res.status(200).json(usersWithScreenshots);
+  } catch (error) {
+    console.error('Error fetching verified users:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/approve/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const travel = await Travel.findOne({ isActive: true });
+    if (!travel) return res.status(400).json({ error: 'No active trips available' });
+    const user = await User.findByIdAndUpdate(id, { paymentStatus: 'verified' }, { new: true });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    bot.sendMessage(user.telegramId, `✅ውድ ${user.name} የ ${travel.name} ምዝገባዎ ተረጋግጧል .`);
+    res.status(200).json(user);
+  } catch (error) {
+    console.error('Error approving user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+)
+app.put('/deny/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const travel = await Travel.findOne({ isActive: true });
+    if (!travel) return res.status(400).json({ error: 'No active trips available' });
+    const user = await User.findByIdAndDelete(id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    bot.sendMessage(user.telegramId, `❌ውድ ${user.name} የ ${travel.name} ምዝገባዎ አልተቀበለም .`);
+    res.status(200).json({ message: 'User registration denied and deleted successfully' });
+  } catch (error) {
+    console.error('Error denying user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+);
+app.get('/CurrentTrip', async (req, res) => {
+  try {
+    const travel = await Travel.findOne({ isActive: true });
+    if (!travel) return res.status(400).json({ error: 'No active trips available' });
+    res.status(200).json(travel);
+  } catch (error) {
+    console.error('Error fetching current trip:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+);
+app.post('/deleteTrip', async (req, res) => {
+  try {
+    const travel = await Travel.findOne({ isActive: true });
+    if (!travel) return res.status(400).json({ error: 'No active trips available' });
+    await Travel.updateMany({}, { $set: { isActive: false } });
+    res.status(200).json({ message: 'Trip deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting trip:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+);
+app.post('/createTrip', async (req, res) => {
+  try {
+    const { name, endDate, AccountName, AccountNo, Price } = req.body;
+    if (!name || !endDate || !AccountName || !AccountNo || !Price) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+    
+    const startDate = new Date(); // Set start date to now
+    
+
+    if (endDate <= startDate) {
+      return res.status(400).json({ error: 'End date must be after the start date' });
+    }
+
+    
+
+    const newTrip = {
+      name,
+      startDate,
+      endDate,
+      AccountName,
+      AccountNo,
+      Price,
+      isActive: true,
+    };
+
+    // Deactivate all existing trips
+    await Travel.updateMany({}, { $set: { isActive: false } });
+
+    // Insert the new trip
+    await Travel.insertOne(newTrip);
+    res.status(200).json({ message: 'Trip created successfully' });
+  } catch (error) {
+    console.error('Error creating trip:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+);
+
+app.get('/myRegistration/:telegramId', async (req, res) => {
+
+  const { telegramId } = req.params;
+  try {
+    const user = await User.find({ telegramId }).populate('travelId');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.status(200).json(user);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+);
+app.get('/participants', async (req, res) => {
+  
+  try {
+    const travel = await Travel.findOne({ isActive: true });
+    if (!travel) return res.status(400).json({ error: 'No active trips available' });
+    const travelId = travel._id.toString();
+    const participants = await User.find({ travelId,paymentStatus: 'verified' })
+    if (!participants) return res.status(404).json({ error: 'Participants not found' });
+    res.status(200).json({
+      participants,
+      name:travel.name,
+      RegEnd:travel.endDate,
+    });
+  } catch (error) {
+    console.error('Error fetching participants:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+);
+app.get('/stastics',async (req,res)=>{
+  try {
+    const travel = await Travel.findOne({ isActive: true });
+    if (!travel) return res.status(400).json({ error: 'No active trips available' });
+    const travelId = travel._id.toString();
+    const participants = await User.find({ travelId });
+    if (!participants) return res.status(404).json({ error: 'Participants not found' });
+    const totalParticipants = participants.length;
+    const verifiedParticipants = participants.filter(participant => participant.paymentStatus === 'verified').length;
+    res.status(200).json({ totalParticipants, verifiedParticipants });
+  }
+  catch (error) {
+    console.error('Error fetching statistics:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+);
+
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   bot.stopPolling();
@@ -700,8 +992,8 @@ process.on('unhandledRejection', (reason, promise) => {
 module.exports = app;
 const startServer = () => {
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  app.listen(PORT,'192.168.1.9',() => {
+    console.log(`Server running on http://192.168.1.9:3000`);
     
     // Self-pinging mechanism
     setInterval(() => {
@@ -710,6 +1002,7 @@ const startServer = () => {
     }, 300000); // 5 minutes
   });
 };
+
 
 if (require.main === module) {
   startServer();
