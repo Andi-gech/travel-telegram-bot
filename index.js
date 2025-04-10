@@ -956,7 +956,7 @@ app.post('/postlisttogroup', async (req, res) => {
     msg += `**>`;
  
     participants.forEach((p, index) => {
-      msg += `>${index + 1} ${p.name} \n`;
+      msg += `>${index + 1} ${p.name} `;
     });
     
     bot.sendMessage(GROUP_CHAT_ID, msg, { parse_mode: 'MarkdownV2' });
