@@ -7,6 +7,7 @@ const travelSchema = new mongoose.Schema({
   AccountNo: { type: String, required: true },
   AccountName: { type: String, required: true },
   Price: { type: Number, required: true },
+  TripDate: { type: Date, required: true },
   isActive: { type: Boolean, default: false },
 }, { timestamps: true });
 

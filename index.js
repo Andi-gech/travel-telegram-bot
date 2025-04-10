@@ -500,13 +500,24 @@ bot.on('message', async (msg) => {
 
     case 'awaitingAccountNo':
       state.tempData.AccountNo = text.trim();
-      state.step = 'awaitingPrice'; // Next step to price
+      state.step = 'awaitingTripDate'; // Next step to price
       adminCreateStates.set(userId, state);
 
+      bot.sendMessage(chatId, '💰 እባኮትን *የጉዞ Date* ያስገቡ።', {
+        parse_mode: 'Markdown'
+      });
+      break;
+
+    case 'awaitingTripDate':
+      state.tempData.TripDate = text.trim();
+      state.step = 'awaitingPrice'; // Next step to price
+      adminCreateStates.set(userId, state);
       bot.sendMessage(chatId, '💰 እባኮትን *የጉዞ ዋጋ* ያስገቡ።', {
         parse_mode: 'Markdown'
       });
       break;
+      
+
 
     case 'awaitingPrice':
       const price = parseFloat(text.trim());
@@ -568,7 +579,7 @@ bot.on('callback_query', async (query) => {
       const state = adminCreateStates.get(userId);
       if (!state) return;
 
-      const { name, endDate,AccountName,AccountNo,Price } = state.tempData;
+      const { name, endDate,AccountName,AccountNo,Price,TripDate } = state.tempData;
 
       // Create the new trip in the database
       const newTrip = {
@@ -578,6 +589,7 @@ bot.on('callback_query', async (query) => {
         AccountName,
         AccountNo,
         Price,
+        TripDate,
         isActive: true,
       };
 
@@ -896,8 +908,8 @@ app.post('/deleteTrip', async (req, res) => {
 );
 app.post('/createTrip', async (req, res) => {
   try {
-    const { name, endDate, AccountName, AccountNo, Price } = req.body;
-    if (!name || !endDate || !AccountName || !AccountNo || !Price) {
+    const { name, endDate, AccountName, AccountNo, Price,TripDate } = req.body;
+    if (!name || !endDate || !AccountName || !AccountNo || !Price|| !TripDate) {
       return res.status(400).json({ error: 'All fields are required' });
     }
     
@@ -917,6 +929,7 @@ app.post('/createTrip', async (req, res) => {
       AccountName,
       AccountNo,
       Price,
+      TripDate,
       isActive: true,
     };
 
@@ -932,6 +945,30 @@ app.post('/createTrip', async (req, res) => {
   }
 }
 );
+app.post('/postlisttogroup', async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message) return res.status(400).json({ error: 'Message is required' });
+    const travel = await Travel.findOne({ isActive: true });
+    if (!travel) return res.status(400).json({ error: 'No active trips available' });
+    const participants = await User.find({ travelId: travel._id,paymentStatus: 'verified' }).populate('travelId');
+    if (!participants || participants.length === 0) return res.status(404).json({ error: 'Participants not found' });
+    let msg = `👥  የ ${travel.name} ጉዞ ተሳታፊዎች\n\n`;
+    msg += `**>`;
+ 
+    participants.forEach((p, index) => {
+      msg += `>${index + 1} ${p.name} \n\n`;
+    });
+    
+    bot.sendMessage(GROUP_CHAT_ID, msg, { parse_mode: 'MarkdownV2' });
+    res.status(200).json({ message: 'Message sent to group successfully' });
+  } catch (error) {
+    console.error('Error sending message to group:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+);
+
 
 app.get('/myRegistration/:telegramId', async (req, res) => {
 
