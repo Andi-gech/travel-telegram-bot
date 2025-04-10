@@ -947,8 +947,7 @@ app.post('/createTrip', async (req, res) => {
 );
 app.post('/postlisttogroup', async (req, res) => {
   try {
-    const { message } = req.body;
-    if (!message) return res.status(400).json({ error: 'Message is required' });
+   
     const travel = await Travel.findOne({ isActive: true });
     if (!travel) return res.status(400).json({ error: 'No active trips available' });
     const participants = await User.find({ travelId: travel._id,paymentStatus: 'verified' }).populate('travelId');
