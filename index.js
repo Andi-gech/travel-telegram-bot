@@ -16,7 +16,7 @@ app.use(express.json());
   
 
 // === Configuration ===
-const BOT_TOKEN = "2200948504:AAHbqggMfwAZnCO0dmWMCYsN2tPH4AhenJE"
+const BOT_TOKEN = process.env.BOT_TOKEN
 console.error('BOT_TOKEN:', BOT_TOKEN);
 
 const ADMIN_ID = [445168632,408048964]; // Replace with actual admin IDs
