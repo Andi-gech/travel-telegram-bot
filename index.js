@@ -16,7 +16,7 @@ app.use(express.json());
   
 
 // === Configuration ===
-const BOT_TOKEN = process.env.BOT_TOKEN
+const BOT_TOKEN = "2200948504:AAHbqggMfwAZnCO0dmWMCYsN2tPH4AhenJE"
 console.error('BOT_TOKEN:', BOT_TOKEN);
 
 const ADMIN_ID = [445168632,408048964]; // Replace with actual admin IDs
@@ -885,10 +885,10 @@ app.get('/CurrentTrip', async (req, res) => {
 );
 app.post('/toggleRegistration', async (req, res) => {
   try {
-    const travel = await Travel.findOne({ registrationactive: true,
+    const travel = await Travel.findOne({ 
       isActive: true });
     if (!travel) return res.status(400).json({ error: 'No active trips available' });
-     travel.registrationactive = false;
+     travel.registrationactive = !travel.registrationactive;
     await travel.save();
     res.status(200).json({ message: 'Trip deleted successfully' });
   } catch (error) {
