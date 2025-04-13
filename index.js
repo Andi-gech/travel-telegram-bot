@@ -253,19 +253,20 @@ bot.onText(/\/start/, async (msg) => {
    
 
     let caption = `
-    ⛪️ የኢትዮጵያ፡ ኦርቶዶክስ፡ ተዋህዶ፡ ቤተክርስቲያን: በምስራቅ: ሸዋ: ሀገረ: ስብከት: በዱከም: ደብረገሊላ፡ ቅዱስ: ሚካኤል ፡ቤተክርስቲያን ⛪️
+   ⛪️ የቅዱስ ሚካኤል መንፈሳዊ ጉዞ ማህበር - | ዱከም | መመዝገቢያ ቦት ሲሆን በሚዘጋጁ የተለያዩ ጉዞዎች ላይ ለመመዝገብ ከታች ያሉትን በተኖች ይጠቀሙ ⛪️
 
-የቅዱስ ሚካኤል መንፈሳዊ ጉዞ ማህበር - | ዱከም | መመዝገቢያ ቦት ሲሆን በሚዘጋጁ የተለያዩ ጉዞዎች ላይ ለመመዝገብ ከታች ያሉትን በተኖች ይጠቀሙ
-
-የማህበሉ ሶሻል ሚድያ 
+ለበለጠ መረጃ የማህበሉ ሶሻል ሚድያ 
 ቴሌግራም ⬇️
+
 https://t.me/+7oOitRT0XNoxZTU8
 
 ቲክቶክ ⬇️
-https://www.tiktok.com/@dukem_yeguzo_mahiber?_t=ZM-8tpXNCvtRCP&_r=1
+
+https://www.tiktok.com/@dukem_yeguzo_mahiber?_t=ZM-8vVUu5KPvtf&_r=1
 
 ኢንስታግራም ⬇️
-https://www.instagram.com/dukem_menfesawi_guzo_mahber?utm_source=qr&igsh=NTYyYmppYWluZTRh`;
+
+https://www.instagram.com/kidusmichael_yeguzo_mahber?igsh=MThleXhnc204NW8yZw== `;
 
     
   
