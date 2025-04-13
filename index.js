@@ -21,7 +21,7 @@ console.error('BOT_TOKEN:', BOT_TOKEN);
 
 const ADMIN_ID = [445168632,408048964]; // Replace with actual admin IDs
 
-const GROUP_CHAT_ID = -1002090187887;
+const GROUP_CHAT_ID = -1002208449319;
 const bot = new TelegramBot(BOT_TOKEN, {
   polling: {
     interval: 300,    // Check every 5 minutes
@@ -647,9 +647,12 @@ console.log('Approve data:', data);
     if (!ADMIN_ID.includes(userId)) return;
 
     const registrationId = data.split('_')[1];
-    await User.deleteOne({ _id: new ObjectId(registrationId) });
+        const user=await User.findById(registrationId).populate('travelId');
+    if (!user) return bot.sendMessage(message.chat.id, '❌ Registration not found.');
+    user.paymentStatus = 'denied';
+    await user.save();
 
-    deleteMessage(chatId, messageId).catch((error) => {
+    bot.deleteMessage(chatId, messageId).catch((error) => {
       console.error('Error deleting message:', error);
     }
     );
