@@ -232,12 +232,12 @@ bot.onText(/📊 ስታቲስቲክስ/, (async (msg) => {
 }));
 
 // Main Menu Handler
-bot.onText(/🏠 Main Menu/, (msg) => {
-  const isAdmin = ADMIN_ID.includes(msg.from.id);
-  bot.sendMessage(msg.chat.id, '🏠 ወደ ዋና በመመለስ ላይ...', {
-    reply_markup: isAdmin ? adminMenu.reply_markup : mainMenu.reply_markup
-  });
-});
+// bot.onText(/🏠 Main Menu/, (msg) => {
+//   const isAdmin = ADMIN_ID.includes(msg.from.id);
+//   bot.sendMessage(msg.chat.id, '🏠 ወደ ዋና በመመለስ ላይ...', {
+//     reply_markup: isAdmin ? adminMenu.reply_markup : mainMenu.reply_markup
+//   });
+// });
 function formatGregorianDates(date) {
   const gregorianDate = new Date(date); // Convert to Date object
   const year = gregorianDate.getFullYear();
@@ -248,44 +248,30 @@ function formatGregorianDates(date) {
 // Start Command
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
-  const isAdmin = ADMIN_ID.includes(msg.from.id);
 
   try {
-    const travel = await Travel.findOne({ isActive: true });
-    const now = new Date();
+   
 
-    let caption = '✨ *ወደ ቅዱስ ሚካኤል የጉዞ ማህበር እንኳን በደህና መጡ!* ✨\n\n';
+    let caption = `
+    ⛪️ የኢትዮጵያ፡ ኦርቶዶክስ፡ ተዋህዶ፡ ቤተክርስቲያን: በምስራቅ: ሸዋ: ሀገረ: ስብከት: በዱከም: ደብረገሊላ፡ ቅዱስ: ሚካኤል ፡ቤተክርስቲያን ⛪️
 
-    if (!travel) {
-      caption += '🚫 በአሁኑ ጊዜ ምንም ጉዞዎች የሉም። በኋላ ተመልሰው ይመልከቱ!';
-    } else {
-      const startDate = ethiopianDate.toEthiopian(...formatGregorianDates(travel.startDate));
-      const endDate = ethiopianDate.toEthiopian(...formatGregorianDates(travel.endDate));
-      const nowEthiopian = ethiopianDate.toEthiopian(...formatGregorianDates(now));
+የቅዱስ ሚካኤል መንፈሳዊ ጉዞ ማህበር - | ዱከም | መመዝገቢያ ቦት ሲሆን በሚዘጋጁ የተለያዩ ጉዞዎች ላይ ለመመዝገብ ከታች ያሉትን በተኖች ይጠቀሙ
 
-      caption += `🏕 *ጉዞ ወደ:* ${bold(travel.name)}\n`;
-      caption += `📅 *የምዝገባ ቀን:* ${startDate} - ${endDate}\n\n`;
+የማህበሉ ሶሻል ሚድያ 
+ቴሌግራም ⬇️
+https://t.me/+7oOitRT0XNoxZTU8
 
-      if (now < travel.startDate) {
-        caption += '🟢 ምዝገባ ክፍት ነው! እባኮትን ለመመዝገብ ከታች ያለውን ሜኑ ይጠቀሙ።';
-      } else if (now > travel.endDate) {
-        caption += '❌ ይህ የጉዞ ምዝገባ አብቅቷል። ለአዲስ ጉዞ ይከታተሉ!';
-      } else {
-        caption += '🌍 የጉዞው ቀናት በመካከል ናቸው። እንኳን በሰላም በመንገድ ይሁኑ!';
-      }
-    }
+ቲክቶክ ⬇️
+https://www.tiktok.com/@dukem_yeguzo_mahiber?_t=ZM-8tpXNCvtRCP&_r=1
 
-    const menu = isAdmin
-      ? { reply_markup: { keyboard: [...adminMenu.reply_markup.keyboard, ...mainMenu.reply_markup.keyboard], resize_keyboard: true } }
-      : mainMenu;
+ኢንስታግራም ⬇️
+https://www.instagram.com/dukem_menfesawi_guzo_mahber?utm_source=qr&igsh=NTYyYmppYWluZTRh`;
 
-    // 🌄 Your travel image URL or file ID
-    const photo = 'https://plus.unsplash.com/premium_photo-1678229915787-d3714c1c3c87?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8b3J0aG9kb3glMjBjaHVyY2h8ZW58MHx8MHx8fDA%3D'; // Or use local fileId
-
-    await bot.sendPhoto(chatId, photo, {
-      caption,
+    
+  
+ await bot.sendMessage(chatId, caption, {
       parse_mode: 'Markdown',
-      reply_markup: menu.reply_markup
+ 
     });
 
   } catch (error) {
@@ -733,7 +719,7 @@ app.post('/register', upload.single('image'), async (req, res) => {
     if (!telegramId) return res.status(400).json({ error: 'Telegram ID is required' });
     if (!pickupLocation) return res.status(400).json({ error: 'Pickup location is required' });
     if (!req.file) return res.status(400).json({ error: 'Screenshot is required' });
-    const travel = await Travel.findOne({ isActive: true });
+    const travel = await Travel.findOne({ isActive: true,registrationactive:true });
     if (!travel) return res.status(400).json({ error: 'No active trips available' });
 
 
@@ -885,7 +871,10 @@ app.put('/deny/:id', async (req, res) => {
 );
 app.get('/CurrentTrip', async (req, res) => {
   try {
-    const travel = await Travel.findOne({ isActive: true });
+    const travel = await Travel.findOne({ 
+      isActive:true,
+      registrationactive:true });
+    
     if (!travel) return res.status(400).json({ error: 'No active trips available' });
     res.status(200).json(travel);
   } catch (error) {
@@ -894,11 +883,13 @@ app.get('/CurrentTrip', async (req, res) => {
   }
 }
 );
-app.post('/deleteTrip', async (req, res) => {
+app.post('/toggleRegistration', async (req, res) => {
   try {
-    const travel = await Travel.findOne({ isActive: true });
+    const travel = await Travel.findOne({ registrationactive: true,
+      isActive: true });
     if (!travel) return res.status(400).json({ error: 'No active trips available' });
-    await Travel.updateMany({}, { $set: { isActive: false } });
+     travel.registrationactive = false;
+    await travel.save();
     res.status(200).json({ message: 'Trip deleted successfully' });
   } catch (error) {
     console.error('Error deleting trip:', error);
