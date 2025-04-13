@@ -872,8 +872,8 @@ app.put('/deny/:id', async (req, res) => {
 app.get('/CurrentTrip', async (req, res) => {
   try {
     const travel = await Travel.findOne({ 
-      isActive:true,
-      registrationactive:true });
+      isActive:true
+      });
     
     if (!travel) return res.status(400).json({ error: 'No active trips available' });
     res.status(200).json(travel);
