@@ -19,9 +19,9 @@ app.use(express.json());
 const BOT_TOKEN = process.env.BOT_TOKEN
 console.error('BOT_TOKEN:', BOT_TOKEN);
 
-const ADMIN_ID = [445168632,408048964]; // Replace with actual admin IDs
+const ADMIN_ID = [445168632,408048964,343795915]; // Replace with actual admin IDs
 
-const GROUP_CHAT_ID = -1002208449319;
+const GROUP_CHAT_ID = -1002296152179;
 const bot = new TelegramBot(BOT_TOKEN, {
   polling: {
     interval: 300,    // Check every 5 minutes
